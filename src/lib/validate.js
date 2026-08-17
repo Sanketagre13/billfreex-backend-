@@ -1,10 +1,3 @@
-/**
- * Request validation for the credit-check endpoints.
- *
- * The browser validates the same rules for fast feedback, but that copy is a
- * convenience — this one is the boundary. Anything reaching the bureau has been
- * through here.
- */
 import { ApiError } from './ApiError.js'
 
 const PAN = /^[A-Z]{5}[0-9]{4}[A-Z]$/
@@ -13,12 +6,10 @@ const PINCODE = /^[1-9]\d{5}$/
 const OTP = /^\d{6}$/
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/
-// Bureau name matching is on letters only; digits and symbols are a sure reject.
 const NAME = /^[A-Za-z][A-Za-z .'-]{1,99}$/
 
 const str = (value) => (typeof value === 'string' ? value.trim() : '')
 
-/** Collects every field failure so the form can highlight them all at once. */
 class Checker {
   #fields = {}
   #body
@@ -27,7 +18,6 @@ class Checker {
     this.#body = body && typeof body === 'object' ? body : {}
   }
 
-  /** @returns the cleaned value, or '' when the field failed. */
   check(name, { required = true, transform, pattern, message, validate } = {}) {
     let value = str(this.#body[name])
 
@@ -62,7 +52,6 @@ class Checker {
 const upper = (v) => v.toUpperCase()
 const collapseSpaces = (v) => v.replace(/\s+/g, ' ')
 
-/** A date that is real (not 2024-02-31), in the past, and 18–100 years ago. */
 function validateDob(value) {
   const [y, m, d] = value.split('-').map(Number)
   const date = new Date(Date.UTC(y, m - 1, d))
@@ -72,7 +61,6 @@ function validateDob(value) {
 
   const now = new Date()
   let age = now.getUTCFullYear() - y
-  // Not yet had this year's birthday.
   if (now.getUTCMonth() + 1 < m || (now.getUTCMonth() + 1 === m && now.getUTCDate() < d)) age -= 1
 
   if (age < 18) return 'You must be at least 18 years old.'
@@ -136,7 +124,6 @@ export function validateScoreRequest(body) {
       transform: collapseSpaces,
       validate: (v) => (v.length < 3 ? 'Enter your address.' : null),
     }),
-    // The bureau requires the key to be present; an empty second line is normal.
     addressLine2: checker.check('addressLine2', {
       required: false,
       transform: collapseSpaces,
@@ -148,8 +135,6 @@ export function validateScoreRequest(body) {
     }),
   }
 
-  // Consent is a regulatory gate, not a form field: without an explicit yes we
-  // must not call the bureau at all.
   if (body?.customerConsent !== 'Y' && body?.customerConsent !== true) {
     throw ApiError.badRequest(
       'We need your consent before we can check your credit score.',

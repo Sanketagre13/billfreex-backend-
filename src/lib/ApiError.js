@@ -1,10 +1,4 @@
-/**
- * The only error type the routes throw.
- *
- * `message` is written to be shown to the customer verbatim — the frontend
- * renders it straight into the error banner, so it must never leak upstream
- * internals, stack traces or key material.
- */
+
 export class ApiError extends Error {
   constructor(status, code, message, { fields, cause } = {}) {
     super(message, { cause })

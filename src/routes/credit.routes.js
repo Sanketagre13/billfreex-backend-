@@ -1,13 +1,3 @@
-/**
- * Credit-check routes — the two CRIF calls behind the "Get Credit" button.
- *
- *   POST /api/v1/credit/otp    send the consent OTP
- *   POST /api/v1/credit/score  verify the OTP and pull the score
- *
- * Both are thin: validate, forward, normalise. No persistence — a bureau report
- * is sensitive enough that not storing it is the safest default, and nothing in
- * the flow needs it after the response is rendered.
- */
 import { Router } from 'express'
 import { config } from '../config.js'
 import { sendConsentOtp, fetchScore } from '../crif/client.js'
@@ -17,7 +7,6 @@ import { logger, mask } from '../lib/logger.js'
 
 const router = Router()
 
-/** Bare async handlers reject into Express 5's error pipeline automatically. */
 router.post(
   '/otp',
   rateLimit({

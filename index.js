@@ -7,7 +7,6 @@ const server = createApp().listen(config.port, () => {
   logger.info(`CRIF upstream: ${config.crif.baseUrl}`)
 })
 
-// Let in-flight bureau pulls finish rather than dropping a customer mid-check.
 for (const signal of ['SIGINT', 'SIGTERM']) {
   process.on(signal, () => {
     logger.info(`${signal} received — shutting down`)

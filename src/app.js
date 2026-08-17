@@ -6,17 +6,12 @@ import { errorHandler, notFound } from './middleware/errors.js'
 export function createApp() {
   const app = express()
 
-  // Rate limiting keys on req.ip, which is the proxy's address unless Express
-  // is told to read X-Forwarded-For. Behind nginx/a load balancer, set
-  // TRUST_PROXY=1 or the limiter buckets every visitor together.
+
   if (process.env.TRUST_PROXY) app.set('trust proxy', Number(process.env.TRUST_PROXY) || 1)
   app.disable('x-powered-by')
 
-  // A credit application is a handful of fields; anything larger is not one.
   app.use(express.json({ limit: '32kb' }))
 
-  // In development Vite proxies /api to this server, so requests are
-  // same-origin and CORS never applies. This exists for a split deployment.
   const origins = (process.env.CORS_ORIGINS ?? '')
     .split(',')
     .map((o) => o.trim())
