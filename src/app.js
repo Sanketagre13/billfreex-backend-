@@ -32,8 +32,8 @@ export function createApp() {
     })
   }
 
-  app.get('/api/v1/health', (_req, res) => {
-    res.json({ status: 'ok', env: config.env, uptime: Math.round(process.uptime()) })
+  app.get('/health', (_req, res) => {
+    res.json({ status: 'ok' })
   })
 
   app.use('/api/v1/credit', creditRoutes)
