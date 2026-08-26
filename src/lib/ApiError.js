@@ -27,4 +27,16 @@ export class ApiError extends Error {
   static tooManyRequests(message) {
     return new ApiError(429, 'RATE_LIMITED', message)
   }
+
+  static unauthorized(message = 'Please sign in to continue.') {
+    return new ApiError(401, 'UNAUTHORIZED', message)
+  }
+
+  static conflict(message, fields) {
+    return new ApiError(409, 'CONFLICT', message, { fields })
+  }
+
+  static notFound(message) {
+    return new ApiError(404, 'NOT_FOUND', message)
+  }
 }

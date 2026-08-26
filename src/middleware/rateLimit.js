@@ -10,10 +10,13 @@ setInterval(() => {
   }
 }, SWEEP_MS).unref()
 
-export function rateLimit({ name, max, windowMs, message }) {
+const defaultKeyFn = (req) =>
+  typeof req.body?.mobileNumber === 'string' ? req.body.mobileNumber.slice(-10) : '-'
+
+export function rateLimit({ name, max, windowMs, message, keyFn = defaultKeyFn }) {
   return (req, _res, next) => {
 
-    const subject = typeof req.body?.mobileNumber === 'string' ? req.body.mobileNumber.slice(-10) : '-'
+    const subject = keyFn(req) ?? '-'
     const key = `${name}:${req.ip}:${subject}`
     const now = Date.now()
 

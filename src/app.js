@@ -1,6 +1,7 @@
 import express from 'express'
 import { config } from './config.js'
-import creditRoutes from './routes/credit.routes.js'
+import authRoutes from './routes/auth.routes.js'
+import creditReportRoutes from './routes/creditReport.routes.js'
 import { errorHandler, notFound } from './middleware/errors.js'
 
 export function createApp() {
@@ -36,7 +37,8 @@ export function createApp() {
     res.json({ status: 'ok' })
   })
 
-  app.use('/api/v1/credit', creditRoutes)
+  app.use('/api/v1/auth', authRoutes)
+  app.use('/api/v1/credit-report', creditReportRoutes)
 
   app.use(notFound)
   app.use(errorHandler)

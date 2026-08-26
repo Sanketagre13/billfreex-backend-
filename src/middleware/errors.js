@@ -20,6 +20,12 @@ export function errorHandler(error, req, res, next) {
     })
   }
 
+  if (error?.type === 'entity.too.large') {
+    return res.status(413).json({
+      error: { code: 'PAYLOAD_TOO_LARGE', message: 'The request body was too large.' },
+    })
+  }
+
   logger.error(`Unhandled error on ${req.method} ${req.path}`, error)
   res.status(500).json({
     error: { code: 'INTERNAL_ERROR', message: 'Something went wrong on our side. Please try again.' },
