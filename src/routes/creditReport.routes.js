@@ -2,7 +2,7 @@ import { Router } from 'express'
 import { config } from '../config.js'
 import { requireAuth } from '../middleware/auth.js'
 import { rateLimit } from '../middleware/rateLimit.js'
-import { validateGetCreditRequest } from '../lib/validate.js'
+import { validateCreditOtpRequest, validateGetCreditRequest } from '../lib/validate.js'
 import { sendCreditReportOtp, fetchCreditReport, getLatestCreditReport } from '../creditReports/service.js'
 
 const router = Router()
@@ -20,7 +20,8 @@ router.post(
     message: 'Too many OTP requests. Please wait a few minutes and try again.',
   }),
   async (req, res) => {
-    const result = await sendCreditReportOtp(req.user)
+    const { panNumber } = validateCreditOtpRequest(req.body)
+    const result = await sendCreditReportOtp(req.user, { panNumber })
     res.json(result)
   },
 )

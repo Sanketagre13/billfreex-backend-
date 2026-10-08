@@ -101,10 +101,10 @@ function validateDob(value) {
  * trims every field, which is wrong for a password (a leading/trailing space
  * a user actually typed would silently stop being reproducible).
  */
-function validatePassword(value) {
+function validatePassword(value, { minLength = PASSWORD_MIN_LENGTH } = {}) {
   if (typeof value !== 'string' || value.length === 0) return 'Enter a password.'
   if (Buffer.byteLength(value, 'utf8') > PASSWORD_MAX_BYTES) return 'Password is too long.'
-  if (value.length < PASSWORD_MIN_LENGTH) return `Password must be at least ${PASSWORD_MIN_LENGTH} characters.`
+  if (value.length < minLength) return `Password must be at least ${minLength} characters.`
   if (!HAS_LETTER.test(value) || !HAS_DIGIT.test(value)) {
     return 'Password must include at least one letter and one number.'
   }
@@ -182,15 +182,115 @@ export function validateSigninRequest(body) {
   }
 }
 
+export function validateAdminSigninRequest(body) {
+  const email = str(body?.email).toLowerCase()
+  const password = typeof body?.password === 'string' ? body.password : ''
+
+  const fields = {}
+  if (!email) fields.email = 'Enter your email.'
+  if (!password) fields.password = 'Enter your password.'
+  if (Object.keys(fields).length > 0) {
+    throw ApiError.badRequest('Please correct the highlighted fields.', fields)
+  }
+  return { email, password }
+}
+
+// Admins can read every user's personal data, so their bar is higher than
+// the customer minimum.
+const ADMIN_PASSWORD_MIN_LENGTH = 12
+
+export const isValidEmail = (value) => EMAIL.test(value)
+
+/** The admin password rule on its own, for callers outside a request body
+ *  (the ADMIN_EMAIL/ADMIN_PASSWORD bootstrap in admin/bootstrap.js). */
+export const adminPasswordError = (value) => validatePassword(value, { minLength: ADMIN_PASSWORD_MIN_LENGTH })
+
+export function validateAdminForgotPasswordRequest(body) {
+  const email = str(body?.email).toLowerCase()
+  if (!EMAIL.test(email)) {
+    throw ApiError.badRequest('Please correct the highlighted fields.', { email: 'Enter a valid email address.' })
+  }
+  return { email }
+}
+
+/** The token isn't format-checked here: a malformed one simply matches no
+ *  stored hash, and gets the same "invalid or expired" answer as any other. */
+export function validateAdminResetPasswordRequest(body) {
+  const passwordError = validatePassword(body?.password, { minLength: ADMIN_PASSWORD_MIN_LENGTH })
+  if (passwordError) {
+    throw ApiError.badRequest('Please correct the highlighted fields.', { password: passwordError })
+  }
+  return { token: str(body?.token).slice(0, 200), password: body.password }
+}
+
+export function validateAdminChangePasswordRequest(body) {
+  const currentPassword = typeof body?.currentPassword === 'string' ? body.currentPassword : ''
+
+  const fields = {}
+  if (!currentPassword) fields.currentPassword = 'Enter your current password.'
+  const newPasswordError = validatePassword(body?.newPassword, { minLength: ADMIN_PASSWORD_MIN_LENGTH })
+  if (newPasswordError) fields.newPassword = newPasswordError
+  if (Object.keys(fields).length > 0) {
+    throw ApiError.badRequest('Please correct the highlighted fields.', fields)
+  }
+  return { currentPassword, newPassword: body.newPassword }
+}
+
+const intInRange = (value, fallback, min, max) => {
+  const n = Number.parseInt(str(value), 10)
+  return Number.isFinite(n) ? Math.min(Math.max(n, min), max) : fallback
+}
+
+/**
+ * Query-string options for the admin tables. Lenient on purpose — a bad page
+ * number or unknown sort key falls back to a default rather than erroring,
+ * since it only ever comes from the admin panel's own controls. `sortKeys`
+ * and `resultFilters` are the whitelists from the admin/ query modules.
+ */
+export function validateAdminListQuery(query, { sortKeys, defaultSort, resultFilters = [] }) {
+  const sort = str(query?.sort)
+  const result = str(query?.result)
+  return {
+    search: str(query?.search).slice(0, 100),
+    page: intInRange(query?.page, 1, 1, 100_000),
+    pageSize: intInRange(query?.pageSize, 25, 1, 100),
+    sort: sortKeys.includes(sort) ? sort : defaultSort,
+    order: str(query?.order).toLowerCase() === 'asc' ? 'ASC' : 'DESC',
+    result: resultFilters.includes(result) ? result : '',
+    userId: intInRange(query?.userId, null, 1, Number.MAX_SAFE_INTEGER),
+  }
+}
+
+export function validateAdminUsersQuery(query, sortKeys) {
+  const { result, userId, ...options } = validateAdminListQuery(query, { sortKeys, defaultSort: 'joined' })
+  return options
+}
+
+/** A numeric route id, or a 404 — never a SQL error from a malformed one. */
+export function validateIdParam(value, notFoundMessage) {
+  const id = Number(value)
+  if (!Number.isSafeInteger(id) || id < 1) throw ApiError.notFound(notFoundMessage)
+  return id
+}
+
+const panRule = {
+  transform: upper,
+  pattern: PAN,
+  message: 'Enter a valid PAN, e.g. ABCDE1234F.',
+}
+
+/** The OTP step needs the PAN too: it decides whether a cached report already
+ *  covers this PAN, in which case no OTP is sent at all. */
+export function validateCreditOtpRequest(body) {
+  const checker = new Checker(body)
+  return checker.settle({ panNumber: checker.check('panNumber', panRule) })
+}
+
 export function validateGetCreditRequest(body) {
   const checker = new Checker(body)
 
   const result = {
-    panNumber: checker.check('panNumber', {
-      transform: upper,
-      pattern: PAN,
-      message: 'Enter a valid PAN, e.g. ABCDE1234F.',
-    }),
+    panNumber: checker.check('panNumber', panRule),
     otp: checker.check('otp', {
       transform: (v) => v.replace(/\s/g, ''),
       pattern: OTP,

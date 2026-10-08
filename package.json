@@ -11,6 +11,7 @@
     "start": "node index.js",
     "dev": "node --watch index.js",
     "migrate": "node scripts/migrate.js",
+    "create-admin": "node scripts/create-admin.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -19,6 +20,7 @@
   "dependencies": {
     "bcryptjs": "^3.0.3",
     "express": "^5.2.1",
-    "mysql2": "^3.24.2"
+    "mysql2": "^3.24.2",
+    "write-excel-file": "^4.1.1"
   }
 }

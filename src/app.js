@@ -2,6 +2,7 @@ import express from 'express'
 import { config } from './config.js'
 import authRoutes from './routes/auth.routes.js'
 import creditReportRoutes from './routes/creditReport.routes.js'
+import adminRoutes from './routes/admin.routes.js'
 import { errorHandler, notFound } from './middleware/errors.js'
 
 export function createApp() {
@@ -26,6 +27,8 @@ export function createApp() {
         res.setHeader('Access-Control-Allow-Credentials', 'true')
         res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
         res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS')
+        // Lets a cross-origin admin panel read the export's filename.
+        res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition')
         res.setHeader('Vary', 'Origin')
       }
       if (req.method === 'OPTIONS') return res.sendStatus(204)
@@ -39,6 +42,7 @@ export function createApp() {
 
   app.use('/api/v1/auth', authRoutes)
   app.use('/api/v1/credit-report', creditReportRoutes)
+  app.use('/api/v1/admin', adminRoutes)
 
   app.use(notFound)
   app.use(errorHandler)

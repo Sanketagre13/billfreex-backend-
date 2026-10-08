@@ -77,6 +77,31 @@ export const config = {
     cookieSameSite: process.env.COOKIE_SAMESITE ?? (isProd ? 'None' : 'Lax'),
   },
 
+  admin: {
+    cookieName: process.env.ADMIN_SESSION_COOKIE_NAME ?? 'bfx_admin_session',
+    // Scoped to the admin API, so the admin cookie never rides along on
+    // ordinary user requests (and vice versa — they're different names).
+    cookiePath: '/api/v1/admin',
+    sessionTtlHours: Number(process.env.ADMIN_SESSION_TTL_HOURS ?? 12),
+    exportMaxRows: Number(process.env.ADMIN_EXPORT_MAX_ROWS ?? 100_000),
+    // Where password reset links point. No trailing slash.
+    panelUrl: (process.env.ADMIN_PANEL_URL ?? 'http://localhost:5175').replace(/\/+$/, ''),
+    passwordResetTtlMinutes: Number(process.env.ADMIN_PASSWORD_RESET_TTL_MINUTES ?? 30),
+    // First-admin bootstrap — see admin/bootstrap.js. Only ever creates.
+    bootstrapEmail: (process.env.ADMIN_EMAIL ?? '').trim().toLowerCase(),
+    bootstrapPassword: process.env.ADMIN_PASSWORD ?? '',
+    bootstrapName: process.env.ADMIN_NAME?.trim() || 'BillFreeX Admin',
+  },
+
+  email: {
+    // Optional outside production: without it, emails are printed to the
+    // console instead of sent (see email/resend.js).
+    resendApiKey: process.env.RESEND_API_KEY ?? '',
+    // Must be on a domain verified in the Resend dashboard.
+    from: process.env.EMAIL_FROM ?? 'BillFreeX <no-reply@billfreex.com>',
+    timeoutMs: Number(process.env.EMAIL_TIMEOUT_MS ?? 10_000),
+  },
+
   creditReport: {
     cacheDays: 30,
     // Must comfortably exceed crif.timeoutMs, so a request waiting on the

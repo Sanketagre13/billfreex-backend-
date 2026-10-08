@@ -33,6 +33,23 @@ export async function findLatestReportRow(userId, conn = pool) {
   return rows[0] ?? null
 }
 
+/** A user's reports fetched at or after `since`, newest first. Includes the
+ *  encrypted PAN so the caller can match on it — encrypt() uses a random IV,
+ *  so equal PANs never have equal ciphertexts and can't be compared in SQL. */
+export async function findReportRowsSince(userId, since, conn = pool) {
+  const [rows] = await conn.execute(
+    `SELECT pan_number_encrypted AS panNumberEncrypted, report_data_encrypted AS reportDataEncrypted,
+            score, bureau_status AS bureauStatus, crif_display_id AS crifDisplayId, fetched_at AS fetchedAt
+     FROM credit_reports WHERE user_id = ? AND fetched_at >= ? ORDER BY fetched_at DESC LIMIT 50`,
+    [userId, since],
+  )
+  return rows
+}
+
 export function decryptReportData(row) {
   return JSON.parse(decrypt(row.reportDataEncrypted))
+}
+
+export function decryptPanNumber(row) {
+  return decrypt(row.panNumberEncrypted)
 }
